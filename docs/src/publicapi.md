@@ -1,0 +1,10 @@
+
+
+
+
+
+```@docs
+calcfactors
+posteriormean
+blockpostcov
+```

@@ -1,0 +1,14 @@
+
+
+using Documenter, KronLinInv 
+
+makedocs(modules = [KronLinInv],
+         repo = "../../{path}",
+         sitename="KronLinInv.jl",
+         authors = "Andrea Zunino",
+         format = Documenter.HTML(prettyurls=get(ENV,"CI",nothing)=="true"),
+         pages = [
+             "User guide" => "index.md",
+             "API" => "publicapi.md"
+         ]
+         )

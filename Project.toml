@@ -1,0 +1,10 @@
+name = "KronLinInv"
+uuid = "cc83e5c8-98fc-11e9-313e-e750fdcd15c8"
+authors = ["Andrea Zunino <inverseproblem@users.noreply.github.com>"]
+version = "0.1.0"
+
+[deps]
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
