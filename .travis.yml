@@ -1,3 +1,11 @@
+## Travis docs: https://docs.travis-ci.com/user/languages/julia/
+
+language: julia
+julia:
+  - nightly
+  - 1.1
+  - 1.0.3
+  
 jobs:
   include:
     - stage: "Documentation"
