@@ -4,7 +4,7 @@
 ```@contents
 Pages = ["index.md","publicapi.md"]
 Depth = 2
-``` -->
+``` 
 
 # User guide
 
