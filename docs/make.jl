@@ -12,3 +12,7 @@ makedocs(modules = [KronLinInv],
              "API" => "publicapi.md"
          ]
          )
+
+deploydocs(
+    repo = "github.com/inverseproblem/KronLinInv.jl.git",
+)
