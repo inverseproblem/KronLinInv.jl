@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/inverseproblem/KronLinInv.jl.svg?branch=master)](https://travis-ci.com/inverseproblem/KronLinInv.jl)
 
-Docs: https://inverseproblem.github.io/KronLinInv.jl
+Docs: https://inverseproblem.github.io/KronLinInv.jl/dev
 
 
 Kronecker-product-based linear inversion of geophysical (or other kinds of) data under Gaussian and separability assumptions. 
