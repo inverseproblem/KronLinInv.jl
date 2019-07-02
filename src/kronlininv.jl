@@ -150,8 +150,7 @@ function calcfactors(Gfwd::FwdOps,Covs::CovMats)
         C = getfield(Covs,i)
         if isposdef( C )==false
             fnam = string(fieldname(CovMats,i))
-            println("\n $(fnam) is not positive definite. Aborting. \n")
-            exit()
+            error("\n calclfactores(): $(fnam) is not positive definite. Aborting. \n")
         end
     end
     
@@ -224,10 +223,10 @@ Computes the posterior mean model.
 
 # Arguments
 - `klifac`: a structure containing the required "factors" previously computed with 
-    the function [`calcfactors()`][@ref]. It includes
+    the function `calcfactors()`. It includes
     * `U1, U2, U3` ``\mathbf{U}_1``, ``\mathbf{U}_2``, ``\mathbf{U}_3``  of  ``F_{\sf{A}}``
     * `diaginvlambda` ``F_{\sf{B}}``
-    * `Z1, Z2, Z3` ``\mathbf{U}_1^{-1}
+    * `iUCmGtiCd1, iUCmGtiCd2, iUCmGtiCd3` ``\mathbf{U}_1^{-1}
       \mathbf{C}_{\rm{M}}^{\rm{x}}
       (\mathbf{G}^{\rm{x}})^{\sf{T}}(\mathbf{C}_{\rm{D}}^{\rm{x}})^{-1} ``,
       `` \mathbf{U}_2^{-1} \mathbf{C}_{\rm{M}}^{\rm{y}}
@@ -250,7 +249,7 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     ##--------------
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
     diaginvlambda = klifac.invlambda
-    Z1,Z2,Z3 = klifac.Z1,klifac.Z2,klifac.Z3
+    Z1,Z2,Z3 = klifac.iUCmGtiCd1,klifac.iUCmGtiCd2,klifac.iUCmGtiCd3
     G1,G2,G3 = Gfwd.G1,Gfwd.G2,Gfwd.G3
 
     ## sizes
@@ -294,7 +293,7 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
         idcpus = workers()
         firstwork = idcpus[1]
         numwork = nworkers()
-        println("posteriormean(): parallel run using $numwork cpus")
+        println("posteriormean(): Parallel run using $numwork workers")
         
         ##################################################
         #             loop 1                             #
@@ -357,7 +356,7 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
                                                             mprior,astart,aend)
             end
         end
-        
+        println()
         ##############################################################
 
 
@@ -378,7 +377,7 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
             if (b%everynit==0) | (b==2)
                 eta =  ( (time()-startt)/float(b-1) * (Na-b+1) ) /60.0
                 reta = round(eta,digits=3)
-                print("loop 1/3: $b of $Nb; ETA: $reta min \r")
+                print("posteriormean(): loop 1/3, $b of $Nb; ETA: $reta min  \r")
                 flush(stdout)
             end
 
@@ -400,7 +399,7 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
             if (i%everynit==0) | (i==2)
                 eta =  ( (time()-startt)/float(i-1) * (Na-i+1) ) /60.0
                 reta = round(eta,digits=3)
-                print("loop 2/3: $i of $Na; ETA: $reta min \r")
+                print("posteriormean(): loop 2/3, $i of $Na; ETA: $reta min  \r")
                 flush(stdout)
             end                     
             
@@ -419,7 +418,7 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
             if (i%everynit==0) | (i==2)
                 eta =  ( (time()-startt)/float(i+1) * (Na-i+1) ) /60.0
                 reta = round(eta,digits=3)
-                print("loop 3/3: $i of $Na; ETA: $reta min \r")
+                print("posteriormean(): loop 3/3, $i of $Na; ETA: $reta min   \r")
                 flush(stdout)
             end
             
@@ -436,7 +435,7 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
             ## element of the posterior mean
             postm[i] = mprior[i] + elUDZh[i] # sum(bigmatrow.*ddiff)
         end
-        print("\n")
+        println()
     end
     
     return postm
@@ -456,7 +455,7 @@ function comp_ddiff(everynit::Int64,firstwork::Int64,
     myNb = bend-bstart+1
     ddiff = zeros(Float64,myNb)
     Na = length(mprior)
-    # loop on chunk
+    # loop 
     @inbounds for b=bstart:bend # b=1:Nb
         myb = b-bstart+1
 
@@ -465,8 +464,8 @@ function comp_ddiff(everynit::Int64,firstwork::Int64,
             if myid()==firstwork
                 eta = ( (time()-startt)/float(myb-1) * (myNb-myb+1) ) /60.0
                 reta = round(eta,digits=3)
-                println("[parallel] loop 1/3 b: $myb of $myNb; ETA: $reta min ") #  \r")
-                #flush(stdout)
+                print("posteriormean() [parallel]: loop 1/3 b, $myb of $myNb; ETA: $reta min  \r")
+                flush(stdout)
             end
         end
 
@@ -503,8 +502,8 @@ function comp_Zh(everynit::Int64,firstwork::Int64,
             if myid()==firstwork            
                 eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
                 reta = round(eta,digits=3)
-                println("[parallel] loop 2/3 a: $mya of $myNa; ETA: $reta min ") #  \r")
-                #flush(stdout)
+                print("posteriormean() [parallel]: loop 2/3 a, $mya of $myNa; ETA: $reta min  \r")
+                flush(stdout)
             end
         end
 
@@ -543,8 +542,8 @@ function comp_postm(everynit::Int64,firstwork::Int64,
             if myid()==firstwork
                 eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
                 reta = round(eta,digits=3)
-                println("[parallel] loop 3/3 a: $mya of $myNa; ETA: $reta min ") #  \r")
-                #flush(stdout)
+                print("posteriormean() [parallel]: loop 3/3 a, $mya of $myNa; ETA: $reta min   \r")
+                flush(stdout)
             end
         end
 
@@ -575,12 +574,14 @@ Computes a block of the posterior covariance.
 
 # Arguments
 - `klifac`: a structure containing the required "factors" previously computed with 
-    the function [`calcfactors()`][@ref]. It includes
+    the function `calcfactors`. It includes
     * U1,U2,U3 `` \mathbf{U}_1``, ``\mathbf{U}_2``, ``\mathbf{U}_3`` of ``F_{\sf{A}}``
     * diaginvlambda ``F_{\sf{B}}``
     * iUCm1, iUCm2, iUCm3  ``\mathbf{U}_1^{-1} \mathbf{C}_{\rm{M}}^{\rm{x}} ``,
       ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{y}}``,
       ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{z}}`` of  ``F_{\sf{C}} `` 
+- `Gfwd`: a structure containing the three forward model matrices  G1,G2,G3, where 
+     `` \mathbf{G} =  \mathbf{G_1} \otimes \mathbf{G_2} \otimes \mathbf{G_3} ``
 - `astart, aend`: indices of the first and last rowa of the requested block
 - `bstart, bend`: indices of the first and last columns of the requested block
 - `runparallel`: whether to run the computations in parallel or not (defaults to false)
@@ -589,7 +590,8 @@ Computes a block of the posterior covariance.
 - The requested block of the posterior covariance.
 
 """
-function blockpostcov(klifac::KLIFactors,astart::Int64,aend::Int64,
+function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
+                      astart::Int64,aend::Int64,
                       bstart::Int64,bend::Int64; runparallel=false )
 
     ##--------------
@@ -618,20 +620,17 @@ function blockpostcov(klifac::KLIFactors,astart::Int64,aend::Int64,
     # Nc1  = size(Z1,1)*size(Z2,1)*size(Z3,1)
 
     ##-----------------
-    av = 1:Na
+    av = collect(1:Na)
     ## vectors containing all possible indices for 
     ##    row calculations of Kron prod AxBxC
-    iv =  div( (av-1), (Nk*Nj) ) +1 
-    jv =  div( (av-1-(iv-1)*Nk*Nj), Nk ) + 1 
-    kv =  av-(jv-1)*Nk-(iv-1)*Nk*Nj 
+    iv =  div.( (av.-1), (Nk.*Nj) ) .+1 
+    jv =  div.( (av.-1 .-(iv.-1).*Nk.*Nj), Nk ) .+ 1 
+    kv =  av.-(jv.-1).*Nk.-(iv.-1).*Nk.*Nj 
 
     nci = aend-astart+1
     ncj = bend-bstart+1
     postC = Array{Float64}(undef,nci,ncj)
-    row2  = Array{Float64}(undef,Na)
-    col1  = Array{Float64}(undef,Nb)
 
-    
     if runparallel==true 
         ####================================================
         ##     Parallel version
@@ -642,7 +641,7 @@ function blockpostcov(klifac::KLIFactors,astart::Int64,aend::Int64,
         idcpus = workers()
         firstwork = idcpus[1]
         numwork = nworkers()
-        println("blockposterior(): parallel run using $numwork cpus")
+        println("blockpostcov(): Parallel run using $numwork workers")
 
         ## spread work on rows (Na)
         scheduling,looping = spreadwork(nci,numwork,1) ## Nb !!
@@ -650,9 +649,9 @@ function blockpostcov(klifac::KLIFactors,astart::Int64,aend::Int64,
         @sync begin
             for ip=1:numwork 
                 astart,aend = looping[ip,1],looping[ip,2]
-                @async  postC[astart:aend,:] = remotecall_fetch(comp_rowsblockpostC,idcpus[i],
+                @async  postC[astart:aend,:] = remotecall_fetch(comp_rowsblockpostC,idcpus[ip],
                                                                 U1,U2,U3,diaginvlambda,
-                                                                iUCm1,iUCm2,iUCm3,astart,aend)
+                                                                iUCm1,iUCm2,iUCm3,iv,jv,kv,astart,aend,bstart,bend)
             end
         end 
 
@@ -661,10 +660,12 @@ function blockpostcov(klifac::KLIFactors,astart::Int64,aend::Int64,
         ####================================================
         ##     Serial version
         ####================================================
+        row2  = Array{Float64}(undef,Na)
 
         @inbounds for a=astart:aend
             if a%100==0
-                println("a: $a of $(astart):$(aend)")
+                print("blockpostcov():  $a of $(astart) to $(aend) \r")
+                flush(stdout)
             end
             ## calculate one row of first two factors
             ## row of  Kron prod AxBxC times a diag matrix (fb)
@@ -672,19 +673,17 @@ function blockpostcov(klifac::KLIFactors,astart::Int64,aend::Int64,
                 row2[q] = U1[iv[a],iv[q]] * U2[jv[a],jv[q]] * U3[kv[a],kv[q]] * diaginvlambda[q]
             end
             @inbounds for b=bstart:bend
-                ## : vectorize
-                ## : turns off subscript checking  
                 postC[a,b] = 0.0
                 @inbounds for p=1:Na
                     ## calculate one column of fc
-                    col1[p] = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
+                    col1 = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
                     ## calculate one element 
-                    postC[a,b] = postC[a,b] + row2[p] * col1[p]  
+                    postC[a,b] = postC[a,b] + row2[p] * col1
                 end
             end
         end
     end
-
+    println()
     return postC
 end
     
@@ -693,16 +692,26 @@ end
 function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array{Float64,2},
                              diaginvlambda::Array{Float64,1},
                              iUCm1::Array{Float64,2},iUCm2::Array{Float64,2},iUCm3::Array{Float64,2},
-                             astart::Int64,aend::Int64)
+                             iv::Array{Int64,1},jv::Array{Int64,1},kv::Array{Int64,1},
+                             astart::Int64,aend::Int64,bstart::Int64,bend::Int64)
     
     @assert aend>=astart
+    ##-----------------
+    Ni = size(U1,1)
+    Nj = size(U2,1)
+    Nk = size(U3,1)
+    Na = Ni*Nj*Nk
+
     startt = time()
     myNa = aend-astart+1
-    rowspostC =  zeros(Float64,myNa)
+    nci = aend-astart+1
+    ncj = bend-bstart+1
+    rowspostC =  zeros(Float64,nci,ncj)
+    row2  = Array{Float64}(undef,Na)
     
     @inbounds for a=astart:aend
         if a%100==0
-            println("a: $a of $(astart):$(aend)")
+            println("blockpostcov(): $a of $(astart) to $(aend)")
         end
         ## calculate one row of first two factors
         ## row of  Kron prod AxBxC times a diag matrix (fb)
@@ -712,12 +721,12 @@ function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array
         end
         
         @inbounds for b=bstart:bend
-            postC[a,b] = 0.0
+            rowspostC[a,b] = 0.0
             @inbounds for p=1:Na
                 ## calculate one column of fc
-                col1[p] = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
+                col1 = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
                 ## calculate one element 
-                rowspostC[a,b] = postC[a,b] + row2[p] * col1[p]  
+                rowspostC[a,b] = rowspostC[a,b] + row2[p] * col1
             end
         end
     end

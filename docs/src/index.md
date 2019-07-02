@@ -107,7 +107,7 @@ These last two formulae are those used by the KronLinInv algorithm.
 
 Several function are exported by the module KronLinInv:
 
-- [`calcfactors`](@ref): Computes the factors necessary to solve the inverse problem
+- [`calcfactors()`](@ref): Computes the factors necessary to solve the inverse problem
 
 - [`posteriormean()`](@ref): Computes the posterior mean model
 
@@ -119,10 +119,21 @@ Several function are exported by the module KronLinInv:
 
 ## Usage examples
 
+### 2D example
+
 
 ```@example full
 
 ```
+
+
+### 3D example
+
+
+```@example full
+
+```
+
 
 ```@meta
 Author = "Andrea Zunino"

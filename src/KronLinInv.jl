@@ -8,8 +8,8 @@
 ##==========================================================
 module KronLinInv
 
+export CovMats,FwdOps
 export calcfactors,posteriormean,blockpostcov
-export fortran_calcfactors,fortran_posteriormean,fortran_blockpostcov
 
 include("kronlininv.jl")
 
