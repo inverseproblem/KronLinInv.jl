@@ -1,8 +1,9 @@
 
 
 using Test
-using KronLinInv
 using Distributed
+#using KronLinInv
+
 
 # get all the functions
 include("test_suite.jl")

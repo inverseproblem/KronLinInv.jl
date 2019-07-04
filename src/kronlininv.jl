@@ -705,6 +705,7 @@ function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array
                              astart::Int64,aend::Int64,bstart::Int64,bend::Int64)
     
     @assert aend>=astart
+    @assert bend>=bstart
     ##-----------------
     Ni = size(U1,1)
     Nj = size(U2,1)
@@ -717,7 +718,8 @@ function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array
     ncj = bend-bstart+1
     rowspostC =  zeros(Float64,nci,ncj)
     row2  = Array{Float64}(undef,Na)
-    
+
+
     @inbounds for a=astart:aend
         mya = a-astart+1
         
