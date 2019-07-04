@@ -150,7 +150,7 @@ function calcfactors(Gfwd::FwdOps,Covs::CovMats)
         C = getfield(Covs,i)
         if isposdef( C )==false
             fnam = string(fieldname(CovMats,i))
-            error("\n calclfactores(): $(fnam) is not positive definite. Aborting. \n")
+            error("\n calcfactors(): $(fnam) is not positive definite. Aborting. \n")
         end
     end
     
@@ -252,6 +252,12 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     Z1,Z2,Z3 = klifac.iUCmGtiCd1,klifac.iUCmGtiCd2,klifac.iUCmGtiCd3
     G1,G2,G3 = Gfwd.G1,Gfwd.G2,Gfwd.G3
 
+    # U1,U2,U3 = copy(klifac.U1),copy(klifac.U2),copy(klifac.U3)
+    # diaginvlambda = copy(klifac.invlambda)
+    # Z1,Z2,Z3 = copy(klifac.iUCmGtiCd1),copy(klifac.iUCmGtiCd2),copy(klifac.iUCmGtiCd3)
+    # G1,G2,G3 = copy(Gfwd.G1),copy(Gfwd.G2),copy(Gfwd.G3)
+
+
     ## sizes
     Ni = size(Z1,1)
     Nl = size(Z1,2)
@@ -267,8 +273,8 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     Nb = size(dobs,1)
 
     ##-------------
-    av = 1:Na
-    bv = 1:Nb
+    av = collect(1:Na)
+    bv = collect(1:Nb)
     ## vectors containing all possible indices for 
     ##    row calculations of Kron prod AxBxC
     iv = div.( (av.-1), (Nk.*Nj) ) .+1 
@@ -283,7 +289,8 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     
     ####===================================
 
-    if runparallel==true 
+    # if runparallel==true
+        
         ####================================================
         ##     Parallel version
         ####================================================
@@ -301,14 +308,14 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
         ## Nb
         scheduling,looping = spreadwork(Nb,numwork,1) ## Nb !!
         everynit = looping[1,2]>100 ? div(looping[1,2],100) : 2
-
+    
         ddiff = Array{Float64}(undef,Nb)
         @sync begin
             for ip=1:numwork 
                 bstart,bend = looping[ip,1],looping[ip,2]
-                ## distribute work to specific cores
+                # ## distribute work to specific cores
                 @async ddiff[bstart:bend] = remotecall_fetch(comp_ddiff,idcpus[ip],
-                                                             everynit,firstwork,
+                                                              everynit,firstwork,
                                                              iv,lv,jv,mv,kv,nv,
                                                              G1,G2,G3,mprior,dobs,
                                                              bstart,bend)
@@ -360,90 +367,95 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
         ##############################################################
 
 
-    else 
-        ####================================================
-        ##     Serial version
-        ####================================================
-        postm  = Array{Float64}(undef,Na)
-        ddiff  = Array{Float64}(undef,Nb)    
-        Zh     = Array{Float64}(undef,Na)
-        elUDZh = Array{Float64}(undef,Na)
+    # else 
 
-        everynit = Na>20 ? div(Na,20) : 1
+    #     ####================================================
+    #     ##     Serial version
+    #     ####================================================
+    #     postm  = Array{Float64}(undef,Na)
+    #     ddiff  = Array{Float64}(undef,Nb)    
+    #     Zh     = Array{Float64}(undef,Na)
+    #     elUDZh = Array{Float64}(undef,Na)
+
+    #     everynit = Na>20 ? div(Na,20) : 1
         
-        startt = time()
-        ## dobs - dcalc(mprior)
-        @inbounds for b=1:Nb
-            if (b%everynit==0) | (b==2)
-                eta =  ( (time()-startt)/float(b-1) * (Na-b+1) ) /60.0
-                reta = round(eta,digits=3)
-                print("posteriormean(): loop 1/3, $b of $Nb; ETA: $reta min  \r")
-                flush(stdout)
-            end
+    #     startt = time()
+    #     ## dobs - dcalc(mprior)
+    #     @inbounds for b=1:Nb
+    #         if (b%everynit==0) | (b==2)
+    #             eta =  ( (time()-startt)/float(b-1) * (Na-b+1) ) /60.0
+    #             reta = round(eta,digits=3)
+    #             print("posteriormean(): loop 1/3, $b of $Nb; ETA: $reta min  \r")
+    #             flush(stdout)
+    #         end
 
-            # !!---------------------------------------------------------------------------
-            # ddiff(b) = dobs(b) - sum(mprior * G1(lv(b),iv) * G2(mv(b),jv) * G3(nv(b),kv))
-            # !!---------------------------------------------------------------------------
+    #         # !!---------------------------------------------------------------------------
+    #         # ddiff(b) = dobs(b) - sum(mprior * G1(lv(b),iv) * G2(mv(b),jv) * G3(nv(b),kv))
+    #         # !!---------------------------------------------------------------------------
 
-            datp = 0.0
-            @inbounds for j=1:Na
-                elG = G1[lv[b],iv[j]] * G2[mv[b],jv[j]] * G3[nv[b],kv[j]]
-                datp = datp +  mprior[j] * elG
-            end        
-            ddiff[b] = dobs[b] - datp
-        end
+    #         datp = 0.0
+    #         @inbounds for j=1:Na
+    #             elG = G1[lv[b],iv[j]] * G2[mv[b],jv[j]] * G3[nv[b],kv[j]]
+    #             datp = datp +  mprior[j] * elG
+    #         end        
+    #         ddiff[b] = dobs[b] - datp
+    #     end
 
-        startt = time()        
-        @inbounds for i=1:Na
+    #     startt = time()
+    #     #tmpzhi = Array{Float64,1}(undef,Nb)
+    #     @inbounds for i=1:Na
 
-            if (i%everynit==0) | (i==2)
-                eta =  ( (time()-startt)/float(i-1) * (Na-i+1) ) /60.0
-                reta = round(eta,digits=3)
-                print("posteriormean(): loop 2/3, $i of $Na; ETA: $reta min  \r")
-                flush(stdout)
-            end                     
+    #         if (i%everynit==0) | (i==2)
+    #             eta =  ( (time()-startt)/float(i-1) * (Na-i+1) ) /60.0
+    #             reta = round(eta,digits=3)
+    #             print("posteriormean(): loop 2/3, $i of $Na; ETA: $reta min  \r")
+    #             flush(stdout)
+    #         end                     
             
-            ## compute Zh
-            Zh[i]=0.0
-            @inbounds  for j=1:Nb
-                tZZ = Z1[iv[i],lv[j]] * Z2[jv[i],mv[j]] * Z3[kv[i],nv[j]]
-                Zh[i] = Zh[i] + tZZ * ddiff[j]
-            end
-        end
+    #         ## compute Zh
+    #         # tmpzhi .= ddiff .* (Z1[iv[i],lv] .* Z2[jv[i],mv] .* Z3[kv[i],nv])
+    #         # Zh[i] =  sum(tmpzhi)
+
+    #         Zh[i]=0.0
+    #         @inbounds  for j=1:Nb
+    #             tZZ = Z1[iv[i],lv[j]] * Z2[jv[i],mv[j]] * Z3[kv[i],nv[j]]
+    #             Zh[i] = Zh[i] + tZZ * ddiff[j]
+    #         end
+    #     end
         
-        startt = time()
-        ### need to re-loop because full Zh is needed
-        @inbounds for i=1:Na
-
-            if (i%everynit==0) | (i==2)
-                eta =  ( (time()-startt)/float(i+1) * (Na-i+1) ) /60.0
-                reta = round(eta,digits=3)
-                print("posteriormean(): loop 3/3, $i of $Na; ETA: $reta min   \r")
-                flush(stdout)
-            end
+    #     startt = time()
+    #     ### need to re-loop because full Zh is needed
+    #     @inbounds for i=1:Na
+ 
+    #         if (i%everynit==0) | (i==2)
+    #             eta =  ( (time()-startt)/float(i+1) * (Na-i+1) ) /60.0
+    #             reta = round(eta,digits=3)
+    #             print("posteriormean(): loop 3/3, $i of $Na; ETA: $reta min   \r")
+    #             flush(stdout)
+    #         end
             
-            ## UD times Zh
-            elUDZh[i] = 0.0
-            @inbounds for j=1:Na
-                # element of row of UD
-                elrowUD = U1[iv[i],iv[j]] * U2[jv[i],jv[j]] *
-                    U3[kv[i],kv[j]] * diaginvlambda[j]
-                # element of final vector
-                elUDZh[i] = elUDZh[i] + elrowUD * Zh[j]
-            end
+    #         ## UD times Zh
+    #         elUDZh[i] = 0.0
+    #         @inbounds for j=1:Na
+    #             # element of row of UD
+    #             elrowUD = U1[iv[i],iv[j]] * U2[jv[i],jv[j]] *
+    #                 U3[kv[i],kv[j]] * diaginvlambda[j]
+    #             # element of final vector
+    #             elUDZh[i] = elUDZh[i] + elrowUD * Zh[j]
+    #         end
 
-            ## element of the posterior mean
-            postm[i] = mprior[i] + elUDZh[i] # sum(bigmatrow.*ddiff)
-        end
-        println()
-    end
+    #         ## element of the posterior mean
+    #         postm[i] = mprior[i] + elUDZh[i] # sum(bigmatrow.*ddiff)
+    #     end
+    #     println()
+    # end
     
     return postm
 end
 
 ##==========================================================
 
-function comp_ddiff(everynit::Int64,firstwork::Int64,
+function comp_ddiff(everynit::Int64 ,firstwork::Int64,
                     iv::Array{Int64,1},lv::Array{Int64,1},jv::Array{Int64,1},
                     mv::Array{Int64,1},kv::Array{Int64,1},nv::Array{Int64,1},
                     G1::Array{Float64,2},G2::Array{Float64,2},G3::Array{Float64,2},
@@ -465,7 +477,7 @@ function comp_ddiff(everynit::Int64,firstwork::Int64,
                 eta = ( (time()-startt)/float(myb-1) * (myNb-myb+1) ) /60.0
                 reta = round(eta,digits=3)
                 print("posteriormean() [parallel]: loop 1/3 b, $myb of $myNb; ETA: $reta min  \r")
-                flush(stdout)
+                      flush(stdout)
             end
         end
 
@@ -547,7 +559,6 @@ function comp_postm(everynit::Int64,firstwork::Int64,
             end
         end
 
-
         ## UD times Zh
         elUDZh[mya] = 0.0
         @inbounds for j=1:Na
@@ -574,7 +585,7 @@ Computes a block of the posterior covariance.
 
 # Arguments
 - `klifac`: a structure containing the required "factors" previously computed with 
-    the function `calcfactors`. It includes
+    the function `calcfactors()`. It includes
     * U1,U2,U3 `` \mathbf{U}_1``, ``\mathbf{U}_2``, ``\mathbf{U}_3`` of ``F_{\sf{A}}``
     * diaginvlambda ``F_{\sf{B}}``
     * iUCm1, iUCm2, iUCm3  ``\mathbf{U}_1^{-1} \mathbf{C}_{\rm{M}}^{\rm{x}} ``,
@@ -631,7 +642,7 @@ function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
     ncj = bend-bstart+1
     postC = Array{Float64}(undef,nci,ncj)
 
-    if runparallel==true 
+    #if runparallel==true 
         ####================================================
         ##     Parallel version
         ####================================================
@@ -656,33 +667,33 @@ function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
         end 
 
 
-    elseif runparallel==false
-        ####================================================
-        ##     Serial version
-        ####================================================
-        row2  = Array{Float64}(undef,Na)
+    # elseif runparallel==false
+    #     ####================================================
+    #     ##     Serial version
+    #     ####================================================
+    #     row2  = Array{Float64}(undef,Na)
 
-        @inbounds for a=astart:aend
-            if a%100==0
-                print("blockpostcov():  $a of $(astart) to $(aend) \r")
-                flush(stdout)
-            end
-            ## calculate one row of first two factors
-            ## row of  Kron prod AxBxC times a diag matrix (fb)
-            @inbounds for q=1:Na
-                row2[q] = U1[iv[a],iv[q]] * U2[jv[a],jv[q]] * U3[kv[a],kv[q]] * diaginvlambda[q]
-            end
-            @inbounds for b=bstart:bend
-                postC[a,b] = 0.0
-                @inbounds for p=1:Na
-                    ## calculate one column of fc
-                    col1 = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
-                    ## calculate one element 
-                    postC[a,b] = postC[a,b] + row2[p] * col1
-                end
-            end
-        end
-    end
+    #     @inbounds for a=astart:aend
+    #         if a%100==0
+    #             print("blockpostcov():  $a of $(astart) to $(aend) \r")
+    #             flush(stdout)
+    #         end
+    #         ## calculate one row of first two factors
+    #         ## row of  Kron prod AxBxC times a diag matrix (fb)
+    #         @inbounds for q=1:Na
+    #             row2[q] = U1[iv[a],iv[q]] * U2[jv[a],jv[q]] * U3[kv[a],kv[q]] * diaginvlambda[q]
+    #         end
+    #         @inbounds for b=bstart:bend
+    #             postC[a,b] = 0.0
+    #             @inbounds for p=1:Na
+    #                 ## calculate one column of fc
+    #                 col1 = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
+    #                 ## calculate one element 
+    #                 postC[a,b] = postC[a,b] + row2[p] * col1
+    #             end
+    #         end
+    #     end
+    # end
     println()
     return postC
 end
