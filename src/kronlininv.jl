@@ -734,7 +734,7 @@ function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array
         @inbounds for b=bstart:bend
             myb = b-bstart+1
             
-            rowspostC[a,b] = 0.0
+            rowspostC[mya,myb] = 0.0
             @inbounds for p=1:Na
                 ## calculate one column of fc
                 col1 = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
