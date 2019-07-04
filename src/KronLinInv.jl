@@ -13,7 +13,6 @@ export calcfactors,posteriormean,blockpostcov
 
 include("kronlininv.jl")
 
-
 ##==========================================================
 end # module
 #########################################

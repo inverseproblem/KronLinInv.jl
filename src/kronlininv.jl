@@ -719,6 +719,8 @@ function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array
     row2  = Array{Float64}(undef,Na)
     
     @inbounds for a=astart:aend
+        mya = a-astart+1
+        
         if a%100==0
             println("blockpostcov(): $a of $(astart) to $(aend)")
         end
@@ -730,12 +732,14 @@ function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array
         end
         
         @inbounds for b=bstart:bend
+            myb = b-bstart+1
+            
             rowspostC[a,b] = 0.0
             @inbounds for p=1:Na
                 ## calculate one column of fc
                 col1 = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
                 ## calculate one element 
-                rowspostC[a,b] = rowspostC[a,b] + row2[p] * col1
+                rowspostC[mya,myb] = rowspostC[mya,myb] + row2[p] * col1
             end
         end
     end
