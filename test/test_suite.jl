@@ -4,7 +4,7 @@ using KronLinInv
 
 ###############################################
 
-function test2D( ; runparallel)
+function test2D( )
 
     ## 2D problem, so set nx = 1
     nx = 1
@@ -20,14 +20,14 @@ function test2D( ; runparallel)
     
     # run test 
     result = test_mean_cov(nx,ny,nz,nxobs,nyobs,nzobs,
-                           sigmaobs,corlenobs,sigmam,corlenm,runparallel)
+                           sigmaobs,corlenobs,sigmam,corlenm)
 
     return result
 end
 
 #########################################
 
-function test3D( ; runparallel)
+function test3D( )
 
     ## 2D problem, so set nx = 1
     nx = 8
@@ -44,7 +44,7 @@ function test3D( ; runparallel)
     
     # run test 
     result = test_mean_cov(nx,ny,nz,nxobs,nyobs,nzobs,
-                           sigmaobs,corlenobs,sigmam,corlenm,runparallel)
+                           sigmaobs,corlenobs,sigmam,corlenm)
 
     return result
 end
@@ -54,8 +54,7 @@ end
 function test_mean_cov(nx::Integer,ny::Integer,nz::Integer,
                        nxobs::Integer,nyobs::Integer,nzobs::Integer,
                        sigmaobs::Array{Float64,1},corlenobs::Array{Float64,1},
-                       sigmam::Array{Float64,1},corlenm::Array{Float64,1},
-                       runparallel::Bool)
+                       sigmam::Array{Float64,1},corlenm::Array{Float64,1})
 
     ##############################
     ## Setup the problem
@@ -103,13 +102,13 @@ function test_mean_cov(nx::Integer,ny::Integer,nz::Integer,
     klifac = calcfactors(Gfwd,Covs)
 
     ## Calculate the posterior mean model
-    postm = posteriormean(klifac,Gfwd,mprior,dobs,runparallel=runparallel)
+    postm = posteriormean(klifac,Gfwd,mprior,dobs)
 
     ## Calculate the posterior covariance
     npts = nx*ny*nz
     astart, aend = 1,div(npts,3)
     bstart, bend = 1,div(npts,3)
-    postC = blockpostcov(klifac,Gfwd,astart,aend,bstart,bend,runparallel=runparallel)
+    postC = blockpostcov(klifac,Gfwd,astart,aend,bstart,bend)
 
     ##############################
     ## Check results

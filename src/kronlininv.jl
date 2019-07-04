@@ -217,7 +217,7 @@ end
 
 @doc raw"""
     posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
-                  dobs::Array{Float64,1}; runparallel=false)
+                  dobs::Array{Float64,1})
 
 Computes the posterior mean model.
 
@@ -238,13 +238,12 @@ Computes the posterior mean model.
     * `G1, G2, G3` `` \mathbf{G} = \mathbf{G_1} \otimes \mathbf{G_2} \otimes \mathbf{G_3} ``
 - `mprior`: prior model (vector)
 - `dobs`:  observed data (vector)
-- `runparallel`: whether to run the computations in parallel or not (defaults to false)
 
 # Returns
 - The posterior mean model (vector)
 """
 function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
-                       dobs::Array{Float64,1}; runparallel=false)
+                       dobs::Array{Float64,1})
 
     ##--------------
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
@@ -579,7 +578,7 @@ end
 
 @doc raw""" 
     blockpostcov(klifac::KLIFactors,astart::Int64,aend::Int64,
-                 bstart::Int64,bend::Int64; runparallel=false )
+                 bstart::Int64,bend::Int64 )
 
 Computes a block of the posterior covariance. 
 
@@ -595,7 +594,6 @@ Computes a block of the posterior covariance.
      `` \mathbf{G} =  \mathbf{G_1} \otimes \mathbf{G_2} \otimes \mathbf{G_3} ``
 - `astart, aend`: indices of the first and last rowa of the requested block
 - `bstart, bend`: indices of the first and last columns of the requested block
-- `runparallel`: whether to run the computations in parallel or not (defaults to false)
 
 # Returns
 - The requested block of the posterior covariance.
@@ -603,7 +601,7 @@ Computes a block of the posterior covariance.
 """
 function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
                       astart::Int64,aend::Int64,
-                      bstart::Int64,bend::Int64; runparallel=false )
+                      bstart::Int64,bend::Int64 )
 
     ##--------------
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
@@ -759,12 +757,6 @@ end
 #   !>       ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{z}}`` of  `` F_{\sf{C}} `` 
 #   !> @param[in] lowdiag,updiag  Lower and upper diagonal number of requested band
 #   !> @param[out] postC  band of the posterior covariance stored following Lapack convention
-#   !
-#   !
-#   ! REVISION HISTORY:
-#   !>  @date 11/8/2016 - Initial Version
-#   !>  @date 4/11/2016 - Removed indices lv,mv,kv
-#   !>  @date 30/1/2017 - OpenMPI version
 #   !
 #   !
 #   !-------------------------------------------------  
