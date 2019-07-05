@@ -11,7 +11,13 @@ module KronLinInv
 export CovMats,FwdOps
 export calcfactors,posteriormean,blockpostcov
 
+
+using Distributed
+using LinearAlgebra
+
 include("kronlininv.jl")
+
+include("kronlininv_serial.jl")
 
 ##==========================================================
 end # module

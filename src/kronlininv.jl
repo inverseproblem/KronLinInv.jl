@@ -7,15 +7,6 @@
 
 ##==========================================================
 
-
-using Distributed
-using LinearAlgebra
-
-export calcfactors,posteriormean,blockpostcov
-
-
-##==========================================================
-
 struct FwdOps
     G1::Array{Float64,2}
     G2::Array{Float64,2}
@@ -288,166 +279,79 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     
     ####===================================
 
-    # if runparallel==true
-        
-        ####================================================
-        ##     Parallel version
-        ####================================================
-        startt = time()
+    ####================================================
+    ##     Parallel version
+    ####================================================
+    startt = time()
 
-        ## get the ids of cores
-        idcpus = workers()
-        firstwork = idcpus[1]
-        numwork = nworkers()
-        println("posteriormean(): Parallel run using $numwork workers")
-        
-        ##################################################
-        #             loop 1                             #
-        ##################################################
-        ## Nb
-        scheduling,looping = spreadwork(Nb,numwork,1) ## Nb !!
-        everynit = looping[1,2]>100 ? div(looping[1,2],100) : 2
+    ## get the ids of cores
+    idcpus = workers()
+    firstwork = idcpus[1]
+    numwork = nworkers()
+    println("posteriormean(): Parallel run using $numwork workers")
     
-        ddiff = Array{Float64}(undef,Nb)
-        @sync begin
-            for ip=1:numwork 
-                bstart,bend = looping[ip,1],looping[ip,2]
-                # ## distribute work to specific cores
-                @async ddiff[bstart:bend] = remotecall_fetch(comp_ddiff,idcpus[ip],
-                                                              everynit,firstwork,
-                                                             iv,lv,jv,mv,kv,nv,
-                                                             G1,G2,G3,mprior,dobs,
-                                                             bstart,bend)
-            end
-        end 
-
-        ##################################################
-        #             loop 2                             #
-        ##################################################
-        ### need to re-loop because full Zh is needed
-        startt = time()
-        ## Na
-        scheduling,looping = spreadwork(Na,numwork,1) ## Na!!
-        
-        Zh = Array{Float64}(undef,Na)
-        @sync begin
-            for ip=1:numwork 
-                astart,aend = looping[ip,1],looping[ip,2]
-                ## distribute work to specific cores 
-                @async Zh[astart:aend] = remotecall_fetch(comp_Zh,idcpus[ip],
-                                                          everynit,firstwork,
-                                                          iv,lv,jv,mv,kv,nv,
-                                                          Z1,Z2,Z3,ddiff,
-                                                          astart,aend)
-            end
+    ##################################################
+    #             loop 1                             #
+    ##################################################
+    ## Nb
+    scheduling,looping = spreadwork(Nb,numwork,1) ## Nb !!
+    everynit = looping[1,2]>100 ? div(looping[1,2],100) : 2
+    
+    ddiff = Array{Float64}(undef,Nb)
+    @sync begin
+        for ip=1:numwork 
+            bstart,bend = looping[ip,1],looping[ip,2]
+            # ## distribute work to specific cores
+            @async ddiff[bstart:bend] = remotecall_fetch(comp_ddiff,idcpus[ip],
+                                                         everynit,firstwork,
+                                                         iv,lv,jv,mv,kv,nv,
+                                                         G1,G2,G3,mprior,dobs,
+                                                         bstart,bend)
         end
-        
-        ##################################################
-        #             loop 3                             #
-        ##################################################
-        startt = time()
-        ## Na
-        scheduling,looping = spreadwork(Na,numwork,1) ## Na!!
+    end 
 
-        postm = Array{Float64}(undef,Na)
-        @sync begin
-            for ip=1:numwork 
-                astart,aend = looping[ip,1],looping[ip,2]
-                ## distribute work to specific cores 
-                @async postm[astart:aend] = remotecall_fetch(comp_postm,idcpus[ip],
-                                                            everynit,firstwork,
-                                                            iv,lv,jv,mv,kv,nv,
-                                                            U1,U2,U3,
-                                                            diaginvlambda,Zh,
-                                                            mprior,astart,aend)
-            end
+    ##################################################
+    #             loop 2                             #
+    ##################################################
+    ### need to re-loop because full Zh is needed
+    startt = time()
+    ## Na
+    scheduling,looping = spreadwork(Na,numwork,1) ## Na!!
+    
+    Zh = Array{Float64}(undef,Na)
+    @sync begin
+        for ip=1:numwork 
+            astart,aend = looping[ip,1],looping[ip,2]
+            ## distribute work to specific cores 
+            @async Zh[astart:aend] = remotecall_fetch(comp_Zh,idcpus[ip],
+                                                      everynit,firstwork,
+                                                      iv,lv,jv,mv,kv,nv,
+                                                      Z1,Z2,Z3,ddiff,
+                                                      astart,aend)
         end
-        println()
-        ##############################################################
+    end
+    
+    ##################################################
+    #             loop 3                             #
+    ##################################################
+    startt = time()
+    ## Na
+    scheduling,looping = spreadwork(Na,numwork,1) ## Na!!
 
-
-    # else 
-
-    #     ####================================================
-    #     ##     Serial version
-    #     ####================================================
-    #     postm  = Array{Float64}(undef,Na)
-    #     ddiff  = Array{Float64}(undef,Nb)    
-    #     Zh     = Array{Float64}(undef,Na)
-    #     elUDZh = Array{Float64}(undef,Na)
-
-    #     everynit = Na>20 ? div(Na,20) : 1
-        
-    #     startt = time()
-    #     ## dobs - dcalc(mprior)
-    #     @inbounds for b=1:Nb
-    #         if (b%everynit==0) | (b==2)
-    #             eta =  ( (time()-startt)/float(b-1) * (Na-b+1) ) /60.0
-    #             reta = round(eta,digits=3)
-    #             print("posteriormean(): loop 1/3, $b of $Nb; ETA: $reta min  \r")
-    #             flush(stdout)
-    #         end
-
-    #         # !!---------------------------------------------------------------------------
-    #         # ddiff(b) = dobs(b) - sum(mprior * G1(lv(b),iv) * G2(mv(b),jv) * G3(nv(b),kv))
-    #         # !!---------------------------------------------------------------------------
-
-    #         datp = 0.0
-    #         @inbounds for j=1:Na
-    #             elG = G1[lv[b],iv[j]] * G2[mv[b],jv[j]] * G3[nv[b],kv[j]]
-    #             datp = datp +  mprior[j] * elG
-    #         end        
-    #         ddiff[b] = dobs[b] - datp
-    #     end
-
-    #     startt = time()
-    #     #tmpzhi = Array{Float64,1}(undef,Nb)
-    #     @inbounds for i=1:Na
-
-    #         if (i%everynit==0) | (i==2)
-    #             eta =  ( (time()-startt)/float(i-1) * (Na-i+1) ) /60.0
-    #             reta = round(eta,digits=3)
-    #             print("posteriormean(): loop 2/3, $i of $Na; ETA: $reta min  \r")
-    #             flush(stdout)
-    #         end                     
-            
-    #         ## compute Zh
-    #         # tmpzhi .= ddiff .* (Z1[iv[i],lv] .* Z2[jv[i],mv] .* Z3[kv[i],nv])
-    #         # Zh[i] =  sum(tmpzhi)
-
-    #         Zh[i]=0.0
-    #         @inbounds  for j=1:Nb
-    #             tZZ = Z1[iv[i],lv[j]] * Z2[jv[i],mv[j]] * Z3[kv[i],nv[j]]
-    #             Zh[i] = Zh[i] + tZZ * ddiff[j]
-    #         end
-    #     end
-        
-    #     startt = time()
-    #     ### need to re-loop because full Zh is needed
-    #     @inbounds for i=1:Na
- 
-    #         if (i%everynit==0) | (i==2)
-    #             eta =  ( (time()-startt)/float(i+1) * (Na-i+1) ) /60.0
-    #             reta = round(eta,digits=3)
-    #             print("posteriormean(): loop 3/3, $i of $Na; ETA: $reta min   \r")
-    #             flush(stdout)
-    #         end
-            
-    #         ## UD times Zh
-    #         elUDZh[i] = 0.0
-    #         @inbounds for j=1:Na
-    #             # element of row of UD
-    #             elrowUD = U1[iv[i],iv[j]] * U2[jv[i],jv[j]] *
-    #                 U3[kv[i],kv[j]] * diaginvlambda[j]
-    #             # element of final vector
-    #             elUDZh[i] = elUDZh[i] + elrowUD * Zh[j]
-    #         end
-
-    #         ## element of the posterior mean
-    #         postm[i] = mprior[i] + elUDZh[i] # sum(bigmatrow.*ddiff)
-    #     end
-    #     println()
-    # end
+    postm = Array{Float64}(undef,Na)
+    @sync begin
+        for ip=1:numwork 
+            astart,aend = looping[ip,1],looping[ip,2]
+            ## distribute work to specific cores 
+            @async postm[astart:aend] = remotecall_fetch(comp_postm,idcpus[ip],
+                                                         everynit,firstwork,
+                                                         iv,lv,jv,mv,kv,nv,
+                                                         U1,U2,U3,
+                                                         diaginvlambda,Zh,
+                                                         mprior,astart,aend)
+        end
+    end
+    println()
     
     return postm
 end
@@ -476,7 +380,7 @@ function comp_ddiff(everynit::Int64 ,firstwork::Int64,
                 eta = ( (time()-startt)/float(myb-1) * (myNb-myb+1) ) /60.0
                 reta = round(eta,digits=3)
                 print("posteriormean() [parallel]: loop 1/3 b, $myb of $myNb; ETA: $reta min  \r")
-                      flush(stdout)
+                flush(stdout)
             end
         end
 
@@ -624,10 +528,6 @@ function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
         error("blockpostcov(): Wrong size of the requested block array.")
     end 
 
-    ## sizes----
-    # Nr12 = size(U1,2)*size(U2,2)*size(U3,2)
-    # Nc1  = size(Z1,1)*size(Z2,1)*size(Z3,1)
-
     ##-----------------
     av = collect(1:Na)
     ## vectors containing all possible indices for 
@@ -640,65 +540,36 @@ function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
     ncj = bend-bstart+1
     postC = Array{Float64}(undef,nci,ncj)
 
-    #if runparallel==true 
-        ####================================================
-        ##     Parallel version
-        ####================================================
-        startt = time()
+    ####================================================
+    ##     Parallel version
+    ####================================================
+    startt = time()
 
-        ## get the ids of cores
-        idcpus = workers()
-        firstwork = idcpus[1]
-        numwork = nworkers()
-        println("blockpostcov(): Parallel run using $numwork workers")
+    ## get the ids of cores
+    idcpus = workers()
+    firstwork = idcpus[1]
+    numwork = nworkers()
+    println("blockpostcov(): Parallel run using $numwork workers")
 
-        ## spread work on rows (Na)
-        scheduling,looping = spreadwork(nci,numwork,1) ## Nb !!
+    ## spread work on rows (Na)
+    scheduling,looping = spreadwork(nci,numwork,1) ## Nb !!
 
-        @sync begin
-            for ip=1:numwork 
-                astart,aend = looping[ip,1],looping[ip,2]
-                @async  postC[astart:aend,:] = remotecall_fetch(comp_rowsblockpostC,idcpus[ip],
-                                                                U1,U2,U3,diaginvlambda,
-                                                                iUCm1,iUCm2,iUCm3,iv,jv,kv,astart,aend,bstart,bend)
-            end
-        end 
+    @sync begin
+        for ip=1:numwork 
+            astart,aend = looping[ip,1],looping[ip,2]
+            @async  postC[astart:aend,:] = remotecall_fetch(comp_rowsblockpostC,idcpus[ip],firstwork,
+                                                            U1,U2,U3,diaginvlambda,
+                                                            iUCm1,iUCm2,iUCm3,iv,jv,kv,astart,aend,bstart,bend)
+        end
+    end 
 
-
-    # elseif runparallel==false
-    #     ####================================================
-    #     ##     Serial version
-    #     ####================================================
-    #     row2  = Array{Float64}(undef,Na)
-
-    #     @inbounds for a=astart:aend
-    #         if a%100==0
-    #             print("blockpostcov():  $a of $(astart) to $(aend) \r")
-    #             flush(stdout)
-    #         end
-    #         ## calculate one row of first two factors
-    #         ## row of  Kron prod AxBxC times a diag matrix (fb)
-    #         @inbounds for q=1:Na
-    #             row2[q] = U1[iv[a],iv[q]] * U2[jv[a],jv[q]] * U3[kv[a],kv[q]] * diaginvlambda[q]
-    #         end
-    #         @inbounds for b=bstart:bend
-    #             postC[a,b] = 0.0
-    #             @inbounds for p=1:Na
-    #                 ## calculate one column of fc
-    #                 col1 = iUCm1[iv[p],iv[b]] * iUCm2[jv[p],jv[b]] * iUCm3[kv[p],kv[b]]
-    #                 ## calculate one element 
-    #                 postC[a,b] = postC[a,b] + row2[p] * col1
-    #             end
-    #         end
-    #     end
-    # end
     println()
     return postC
 end
     
 ##==========================================================
 
-function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array{Float64,2},
+function comp_rowsblockpostC(firstwork::Int64,U1::Array{Float64,2},U2::Array{Float64,2},U3::Array{Float64,2},
                              diaginvlambda::Array{Float64,1},
                              iUCm1::Array{Float64,2},iUCm2::Array{Float64,2},iUCm3::Array{Float64,2},
                              iv::Array{Int64,1},jv::Array{Int64,1},kv::Array{Int64,1},
@@ -719,12 +590,13 @@ function comp_rowsblockpostC(U1::Array{Float64,2},U2::Array{Float64,2},U3::Array
     rowspostC =  zeros(Float64,nci,ncj)
     row2  = Array{Float64}(undef,Na)
 
-
     @inbounds for a=astart:aend
         mya = a-astart+1
         
-        if a%100==0
-            println("blockpostcov(): $a of $(astart) to $(aend)")
+        if myid()==firstwork
+            if a%100==0
+                println("blockpostcov(): $a of $(astart) to $(aend)")
+            end
         end
         ## calculate one row of first two factors
         ## row of  Kron prod AxBxC times a diag matrix (fb)
