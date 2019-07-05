@@ -98,7 +98,7 @@ The factors are the ones to be stored to subsequently calculate posterior
   (\mathbf{G}^{\rm{z}})^{\sf{T}} (\mathbf{C}_{\rm{D}}^{\rm{z}})^{-1} \right)
 ```
 
-Uses LAPACK.sygvd!(), see [`http://www.netlib.org/lapack/lug/node54.html`](@ref).
+Uses LAPACK.sygvd!(), see <http://www.netlib.org/lapack/lug/node54.html>.
   Reduces a real symmetric-definite generalized eigenvalue problem to
   the standard form. \n
   ``B A z = \lambda z`` 	B = LLT 	C = LT A L 	z = L y
