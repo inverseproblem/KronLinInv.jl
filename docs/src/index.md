@@ -46,8 +46,9 @@ From the above, the posterior covariance matrix is given by
  \mathbf{\widetilde{m}}  
  = \mathbf{m}_{\rm{prior}}+ \mathbf{\widetilde{C}}_{\rm{M}} \, \mathbf{G}^{\sf{T}} \, \mathbf{C}^{-1}_{\rm{D}} \left(\mathbf{d}_{\rm{obs}} - \mathbf{G} \mathbf{m}_{\rm{prior}} \right) \, .
 ```
+KronLinInv solves the inverse problem in an efficient manner, with a very low memory imprint, suitable for large problems where many model parameters and observations are involved.
 
-The paper describes how to transform the previous problem in order to obtain what follows.
+The paper describes how to obtain the solution to the above problem as shown hereafter. First the following matrices are computed
 
 ```math
  \mathbf{U}_1 \mathbf{\Lambda}_1  \mathbf{U}_1^{-1}  
@@ -67,7 +68,7 @@ The paper describes how to transform the previous problem in order to obtain wha
 (\mathbf{C}_{\rm{D}}^{\rm{z}})^{-1} \mathbf{G}^{\rm{z}}  \, .
 ```
 
-The posterior covariance is expressed as
+The posterior covariance is then expressed as
 
 ```math 
 \mathbf{\widetilde{C}}_{\rm{M}} = 
@@ -109,15 +110,19 @@ Several function are exported by the module KronLinInv:
 
 - [`calcfactors()`](@ref): Computes the factors necessary to solve the inverse problem
 
-- [`posteriormean()`](@ref): Computes the posterior mean model
+- [`posteriormean()`](@ref): Computes the posterior mean model using the previously computed "factors" with [`calcfactors()`](@ref).
 
-- [`blockpostcov()`](@ref): Computes a block (or all) of the posterior covariance
+- [`blockpostcov()`](@ref): Computes a block (or all) of the posterior covariance using the previously computed "factors" with [`calcfactors()`](@ref).
 
-- [`bandpostcov()`](@ref): NOT YET IMPLEMENTED! Computes a band of the posterior covariance
+- [`bandpostcov()`](@ref): NOT YET IMPLEMENTED! Computes a band of the posterior covariance the previously computed "factors" with [`calcfactors()`](@ref).
 
 
 
 ## Usage examples
+
+The input needed is represented by the set of three covariance matrices of the model parameters, the three covariances of the observed data, the three forward model operators, the observed data (a vector) and the prior model (a vector).
+_The **first** thing to compute is always the set of "factors" using the function [`calcfactors()`](@ref). 
+Finally, the posterior mean (see [`posteriormean()`](@ref)) and/or covariance (or part of it) (see [`blockpostcov()`](@ref)) can be computed.
 
 ### 2D example
 
