@@ -2,7 +2,7 @@
 
 using Test
 using Distributed
-#using KronLinInv
+using KronLinInv
 
 
 # get all the functions

@@ -136,6 +136,7 @@ function calcfactors(Gfwd::FwdOps,Covs::CovMats)
 
     
     ##----------------
+    ## Check positive definiteness of covariance matrices
     fiecou = fieldcount(CovMats)
     for i=1:fiecou
         C = getfield(Covs,i)
@@ -282,7 +283,6 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     ####================================================
     ##     Parallel version
     ####================================================
-    startt = time()
 
     ## get the ids of cores
     idcpus = workers()
@@ -290,12 +290,18 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     numwork = nworkers()
     println("posteriormean(): Parallel run using $numwork workers")
     
+    ## create the channel for tracking progress
+    chanit = RemoteChannel(()->Channel{Tuple{Float64,Float64,Bool}}(1))
+
+
     ##################################################
     #             loop 1                             #
     ##################################################
     ## Nb
     scheduling,looping = spreadwork(Nb,numwork,1) ## Nb !!
     everynit = looping[1,2]>100 ? div(looping[1,2],100) : 2
+    # init channel
+    put!(chanit,(0.0,Inf,false))
     
     ddiff = Array{Float64}(undef,Nb)
     @sync begin
@@ -306,7 +312,14 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
                                                          everynit,firstwork,
                                                          iv,lv,jv,mv,kv,nv,
                                                          G1,G2,G3,mprior,dobs,
-                                                         bstart,bend)
+                                                         bstart,bend,chanit)
+        end
+
+        jobdone = false
+        while !jobdone
+            wait(chanit)
+            perc,reta,jobdone = take!(chanit)
+            print("posteriormean(): loop 1/3, $(perc)%; ETA: $reta min     \r") 
         end
     end 
 
@@ -314,7 +327,9 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     #             loop 2                             #
     ##################################################
     ### need to re-loop because full Zh is needed
-    startt = time()
+    # init channel
+    put!(chanit,(0.0,Inf,false))
+
     ## Na
     scheduling,looping = spreadwork(Na,numwork,1) ## Na!!
     
@@ -327,17 +342,25 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
                                                       everynit,firstwork,
                                                       iv,lv,jv,mv,kv,nv,
                                                       Z1,Z2,Z3,ddiff,
-                                                      astart,aend)
+                                                      astart,aend,chanit)
+        end
+
+        jobdone = false
+        while !jobdone
+            wait(chanit)
+            perc,reta,jobdone = take!(chanit)
+            print("posteriormean(): loop 2/3, $(perc) %; ETA: $reta min     \r")
         end
     end
-    
+
     ##################################################
     #             loop 3                             #
     ##################################################
-    startt = time()
     ## Na
     scheduling,looping = spreadwork(Na,numwork,1) ## Na!!
-
+    # init channel
+    put!(chanit,(0.0,Inf,false))
+    
     postm = Array{Float64}(undef,Na)
     @sync begin
         for ip=1:numwork 
@@ -348,7 +371,14 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
                                                          iv,lv,jv,mv,kv,nv,
                                                          U1,U2,U3,
                                                          diaginvlambda,Zh,
-                                                         mprior,astart,aend)
+                                                         mprior,astart,aend,chanit)
+        end
+
+        jobdone = false
+        while !jobdone
+            wait(chanit)
+            perc,reta,jobdone = take!(chanit)
+            print("posteriormean(): loop 3/3, $(perc) %; ETA: $reta min     \r")
         end
     end
     println()
@@ -363,7 +393,8 @@ function comp_ddiff(everynit::Int64 ,firstwork::Int64,
                     mv::Array{Int64,1},kv::Array{Int64,1},nv::Array{Int64,1},
                     G1::Array{Float64,2},G2::Array{Float64,2},G3::Array{Float64,2},
                     mprior::Array{Float64,1},dobs::Array{Float64,1},
-                    bstart::Int64,bend::Int64)
+                    bstart::Int64,bend::Int64,
+                    chanit::RemoteChannel{Channel{Tuple{Float64,Float64,Bool}}})
     ## dobs - dcalc(mprior)
     @assert bend>=bstart
     startt = time()
@@ -379,11 +410,18 @@ function comp_ddiff(everynit::Int64 ,firstwork::Int64,
             if myid()==firstwork
                 eta = ( (time()-startt)/float(myb-1) * (myNb-myb+1) ) /60.0
                 reta = round(eta,digits=3)
-                print("posteriormean() [parallel]: loop 1/3 b, $myb of $myNb; ETA: $reta min  \r")
-                flush(stdout)
+                perc = round(myb/myNb*100.0,digits=3)
+                ## put in channel
+                if b<bend
+                    put!(chanit,(perc,reta,false))
+                elseif b==bend
+                    # if last iteration
+                    put!(chanit,(perc,reta,true))
+                end
             end
         end
 
+        ## do computations
         datp = 0.0
         @inbounds for j=1:Na
             elG = G1[lv[b],iv[j]] * G2[mv[b],jv[j]] * G3[nv[b],kv[j]]
@@ -401,7 +439,8 @@ function comp_Zh(everynit::Int64,firstwork::Int64,
                  mv::Array{Int64,1},kv::Array{Int64,1},nv::Array{Int64,1},
                  Z1::Array{Float64,2},Z2::Array{Float64,2},Z3::Array{Float64,2},
                  ddiff::Array{Float64,1},
-                 astart::Int64,aend::Int64)
+                 astart::Int64,aend::Int64,
+                 chanit::RemoteChannel{Channel{Tuple{Float64,Float64,Bool}}})
     ## compute Zh
     @assert aend>=astart
     startt = time()
@@ -417,11 +456,18 @@ function comp_Zh(everynit::Int64,firstwork::Int64,
             if myid()==firstwork            
                 eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
                 reta = round(eta,digits=3)
-                print("posteriormean() [parallel]: loop 2/3 a, $mya of $myNa; ETA: $reta min  \r")
-                flush(stdout)
+                perc = round(mya/myNa*100.0,digits=3)
+                ## put in channel
+                if i<aend
+                    put!(chanit,(perc,reta,false))
+                elseif i==aend
+                    # if last iteration
+                    put!(chanit,(perc,reta,true))
+                end
             end
         end
 
+        ## do calculations
         Zh[mya]=0.0
         @inbounds for j=1:Nb
             tZZ = Z1[iv[i],lv[j]] * Z2[jv[i],mv[j]] * Z3[kv[i],nv[j]]
@@ -439,8 +485,10 @@ function comp_postm(everynit::Int64,firstwork::Int64,
                     U1::Array{Float64,2},U2::Array{Float64,2},U3::Array{Float64,2},
                     diaginvlambda::Array{Float64,1},Zh::Array{Float64,1},
                     mprior::Array{Float64,1},
-                    astart::Int64,aend::Int64)
-    ## compute Zh
+                    astart::Int64,aend::Int64,
+                    chanit::RemoteChannel{Channel{Tuple{Float64,Float64,Bool}}})
+
+    # compute postm
     @assert aend>=astart
     startt = time()
     Na = length(mprior)
@@ -457,11 +505,18 @@ function comp_postm(everynit::Int64,firstwork::Int64,
             if myid()==firstwork
                 eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
                 reta = round(eta,digits=3)
-                print("posteriormean() [parallel]: loop 3/3 a, $mya of $myNa; ETA: $reta min   \r")
-                flush(stdout)
+                perc = round(mya/myNa*100.0,digits=3)
+                ## put in channel
+                if i<aend
+                    put!(chanit,(perc,reta,false))
+                elseif i==aend
+                    # if last iteration
+                    put!(chanit,(perc,reta,true))
+                end
             end
         end
 
+        ## do calculations
         ## UD times Zh
         elUDZh[mya] = 0.0
         @inbounds for j=1:Na
@@ -554,12 +609,24 @@ function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
     ## spread work on rows (Na)
     scheduling,looping = spreadwork(nci,numwork,1) ## Nb !!
 
+    ## create the channel for tracking progress
+    chanit = RemoteChannel(()->Channel{Tuple{Float64,Float64,Bool}}(1))
+    # init channel
+    put!(chanit,(0.0,Inf,false))
+    
     @sync begin
         for ip=1:numwork 
             astart,aend = looping[ip,1],looping[ip,2]
             @async  postC[astart:aend,:] = remotecall_fetch(comp_rowsblockpostC,idcpus[ip],firstwork,
                                                             U1,U2,U3,diaginvlambda,
-                                                            iUCm1,iUCm2,iUCm3,iv,jv,kv,astart,aend,bstart,bend)
+                                                            iUCm1,iUCm2,iUCm3,iv,jv,kv,astart,aend,bstart,bend,chanit)
+        end
+
+        jobdone = false
+        while !jobdone
+            wait(chanit)
+            perc,reta,jobdone = take!(chanit)
+            print("blockpostcov(): $(perc) %; ETA: $reta min     \r")
         end
     end 
 
@@ -573,7 +640,8 @@ function comp_rowsblockpostC(firstwork::Int64,U1::Array{Float64,2},U2::Array{Flo
                              diaginvlambda::Array{Float64,1},
                              iUCm1::Array{Float64,2},iUCm2::Array{Float64,2},iUCm3::Array{Float64,2},
                              iv::Array{Int64,1},jv::Array{Int64,1},kv::Array{Int64,1},
-                             astart::Int64,aend::Int64,bstart::Int64,bend::Int64)
+                             astart::Int64,aend::Int64,bstart::Int64,bend::Int64,
+                             chanit::RemoteChannel{Channel{Tuple{Float64,Float64,Bool}}})
     
     @assert aend>=astart
     @assert bend>=bstart
@@ -593,11 +661,22 @@ function comp_rowsblockpostC(firstwork::Int64,U1::Array{Float64,2},U2::Array{Flo
     @inbounds for a=astart:aend
         mya = a-astart+1
         
-        if myid()==firstwork
-            if a%100==0
-                println("blockpostcov(): $a of $(astart) to $(aend)")
+        # print info
+        if (mya%100==0) | (mya==5)
+            if myid()==firstwork
+                eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
+                reta = round(eta,digits=3)
+                perc = round(mya/myNa*100.0,digits=3)
+                ## put in channel
+                if a<aend
+                    put!(chanit,(perc,reta,false))
+                elseif a==aend
+                    # if last iteration
+                    put!(chanit,(perc,reta,true))
+                end
             end
         end
+
         ## calculate one row of first two factors
         ## row of  Kron prod AxBxC times a diag matrix (fb)
         ## row2 =  U1(iv(a),lv) * U2(jv(a),mv) * U3(kv(a),nv) * diaginvlambda
