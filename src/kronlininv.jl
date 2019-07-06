@@ -243,12 +243,6 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     Z1,Z2,Z3 = klifac.iUCmGtiCd1,klifac.iUCmGtiCd2,klifac.iUCmGtiCd3
     G1,G2,G3 = Gfwd.G1,Gfwd.G2,Gfwd.G3
 
-    # U1,U2,U3 = copy(klifac.U1),copy(klifac.U2),copy(klifac.U3)
-    # diaginvlambda = copy(klifac.invlambda)
-    # Z1,Z2,Z3 = copy(klifac.iUCmGtiCd1),copy(klifac.iUCmGtiCd2),copy(klifac.iUCmGtiCd3)
-    # G1,G2,G3 = copy(Gfwd.G1),copy(Gfwd.G2),copy(Gfwd.G3)
-
-
     ## sizes
     Ni = size(Z1,1)
     Nl = size(Z1,2)
@@ -406,18 +400,16 @@ function comp_ddiff(everynit::Int64 ,firstwork::Int64,
         myb = b-bstart+1
 
         # print info
-        if (myb%everynit==0) | (myb==5)
-            if myid()==firstwork
+        if myid()==firstwork
+            if b<bend && ( (myb%everynit==0) | (myb==5) )
                 eta = ( (time()-startt)/float(myb-1) * (myNb-myb+1) ) /60.0
                 reta = round(eta,digits=3)
                 perc = round(myb/myNb*100.0,digits=3)
                 ## put in channel
-                if b<bend
-                    put!(chanit,(perc,reta,false))
-                elseif b==bend
-                    # if last iteration
-                    put!(chanit,(perc,reta,true))
-                end
+                put!(chanit,(perc,reta,false))
+            elseif b==bend
+                # last iteration
+                put!(chanit,(100.0,0.0,true))
             end
         end
 
@@ -452,18 +444,16 @@ function comp_Zh(everynit::Int64,firstwork::Int64,
         mya = i-astart+1
 
         # print info
-        if (mya%everynit==0) | (mya==5)
-            if myid()==firstwork            
+        if myid()==firstwork
+            if i<aend && ( (mya%everynit==0) | (mya==5) )
                 eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
                 reta = round(eta,digits=3)
                 perc = round(mya/myNa*100.0,digits=3)
                 ## put in channel
-                if i<aend
-                    put!(chanit,(perc,reta,false))
-                elseif i==aend
-                    # if last iteration
-                    put!(chanit,(perc,reta,true))
-                end
+                put!(chanit,(perc,reta,false))
+            elseif i==aend
+                # last iteration
+                put!(chanit,(100.0,0.0,true))
             end
         end
 
@@ -501,21 +491,18 @@ function comp_postm(everynit::Int64,firstwork::Int64,
         mya = i-astart+1
 
         # print info
-        if (mya%everynit==0) | (mya==5)
-            if myid()==firstwork
+        if myid()==firstwork
+            if i<aend && ( (mya%everynit==0) | (mya==5) )
                 eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
                 reta = round(eta,digits=3)
                 perc = round(mya/myNa*100.0,digits=3)
                 ## put in channel
-                if i<aend
-                    put!(chanit,(perc,reta,false))
-                elseif i==aend
-                    # if last iteration
-                    put!(chanit,(perc,reta,true))
-                end
+                put!(chanit,(perc,reta,false))
+            elseif i==aend
+                #  last iteration
+                put!(chanit,(100.0,0.0,true))
             end
         end
-
         ## do calculations
         ## UD times Zh
         elUDZh[mya] = 0.0
@@ -545,7 +532,7 @@ Computes a block of the posterior covariance.
 - `klifac`: a structure containing the required "factors" previously computed with 
     the function `calcfactors()`. It includes
     * U1,U2,U3 `` \mathbf{U}_1``, ``\mathbf{U}_2``, ``\mathbf{U}_3`` of ``F_{\sf{A}}``
-    * diaginvlambda ``F_{\sf{B}}``
+    * diaginvlambda ``F_{\sf{B}}``p
     * iUCm1, iUCm2, iUCm3  ``\mathbf{U}_1^{-1} \mathbf{C}_{\rm{M}}^{\rm{x}} ``,
       ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{y}}``,
       ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{z}}`` of  ``F_{\sf{C}} `` 
@@ -600,7 +587,7 @@ function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
     ####================================================
     startt = time()
 
-    ## get the ids of cores
+    ## get the id of cores
     idcpus = workers()
     firstwork = idcpus[1]
     numwork = nworkers()
@@ -662,18 +649,16 @@ function comp_rowsblockpostC(firstwork::Int64,U1::Array{Float64,2},U2::Array{Flo
         mya = a-astart+1
         
         # print info
-        if (mya%100==0) | (mya==5)
-            if myid()==firstwork
+        if myid()==firstwork
+            if a<aend && ( (mya%100==0) | (mya==5) )
                 eta = ( (time()-startt)/float(mya-1) * (myNa-mya+1) ) /60.0
                 reta = round(eta,digits=3)
                 perc = round(mya/myNa*100.0,digits=3)
                 ## put in channel
-                if a<aend
-                    put!(chanit,(perc,reta,false))
-                elseif a==aend
-                    # if last iteration
-                    put!(chanit,(perc,reta,true))
-                end
+                put!(chanit,(perc,reta,false))
+            elseif a==aend
+                # last iteration
+                put!(chanit,(100.0,0.0,true))
             end
         end
 
@@ -911,8 +896,6 @@ function spreadwork(nit::Int64,nunits::Int64,startpoint::Int64)
         looping[i,2] = sum(scheduling[1:i]) + startpoint - 1
     end 
     
-    #!!print*,myrank,": loop 1",looping(:,1),&
-    ## "| loop 2",looping(:,2)," | sched ",scheduling
     return scheduling,looping
 end 
 
