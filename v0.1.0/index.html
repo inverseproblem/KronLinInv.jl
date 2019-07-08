@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>User guide · KronLinInv.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link href="assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>KronLinInv.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li class="current"><a class="toctext" href>User guide</a><ul class="internal"><li class="toplevel"><a class="toctext" href="#User-guide-1">User guide</a></li><li><a class="toctext" href="#Theoretical-background-1">Theoretical background</a></li><li><a class="toctext" href="#Usage-examples-1">Usage examples</a></li></ul></li><li><a class="toctext" href="publicapi/">API</a></li></ul></nav><article id="docs"><header><nav><ul><li><a href>User guide</a></li></ul><a class="edit-page" href="../..//docs/src/index.md"><span class="fa"></span> Edit source</a></nav><hr/><div id="topbar"><span>User guide</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Contents-1" href="#Contents-1">Contents</a></h1><ul><li><a href="#Contents-1">Contents</a></li><li><a href="#User-guide-1">User guide</a></li><ul><li><a href="#Theoretical-background-1">Theoretical background</a></li><li><a href="#Usage-examples-1">Usage examples</a></li></ul></ul><h1><a class="nav-anchor" id="User-guide-1" href="#User-guide-1">User guide</a></h1><p>This document describes the Julia version of the code KronLinInv.</p><p>If you use this code for research or else, please cite the related paper: </p><p>Andrea Zunino, Klaus Mosegaard (2018), <strong>An efficient method to solve large linearizable inverse problems under Gaussian and separability assumptions</strong>, <em>Computers &amp; Geosciences</em>. ISSN 0098-3004, <a href="https://doi.org/10.1016/j.cageo.2018.09.005">https://doi.org/10.1016/j.cageo.2018.09.005</a>.</p><p>See the above mentioned paper for a detailed description.</p><h2><a class="nav-anchor" id="Theoretical-background-1" href="#Theoretical-background-1">Theoretical background</a></h2><p>KronLinInv solves the <em>linear inverse problem</em> with Gaussian uncertainties represented by the following objective function</p><div>\[S( \mathbf{m}) = \frac{1}{2} ( \mathbf{G} \mathbf{m} - \mathbf{d}_{\sf{obs}} )^{\sf{T}} \mathbf{C}^{-1}_{\rm{D}} ( \mathbf{G} \mathbf{m} - \mathbf{d}_{\sf{obs}} ) + \frac{1}{2} ( \mathbf{m} - \mathbf{m}_{\sf{prior}} )^{\sf{T}} \mathbf{C}^{-1}_{\rm{M}} ( \mathbf{m} - \mathbf{m}_{\sf{prior}} )\]</div><p>under the following separability conditions (for a 3-way decomposition):</p><div>\[\mathbf{C}_{\rm{M}} = \mathbf{C}_{\rm{M}}^{\rm{x}} \otimes 
+\mathbf{C}_{\rm{M}}^{\rm{y}} \otimes \mathbf{C}_{\rm{M}}^{\rm{z}} 
+, \quad
+\mathbf{C}_{\rm{D}} = \mathbf{C}_{\rm{D}}^{\rm{x}} \otimes 
+\mathbf{C}_{\rm{D}}^{\rm{y}} \otimes \mathbf{C}_{\rm{D}}^{\rm{z}} 
+
+\quad \textrm{ and } \quad
+
+\mathbf{G} = \mathbf{G}^{\rm{x}} \otimes \mathbf{G}^{\rm{y}} \otimes \mathbf{G}^{\rm{z}} \, .\]</div><p>From the above, the posterior covariance matrix is given by </p><div>\[ \mathbf{\widetilde{C}}_{\rm{M}} =  \left( \mathbf{G}^{\sf{T}} \,
+\mathbf{C}^{-1}_{\rm{D}} \, \mathbf{G} + \mathbf{C}^{-1}_{\rm{M}} \right)^{-1}\]</div><p>and the center of posterior gaussian is </p><div>\[ \mathbf{\widetilde{m}}  
+ = \mathbf{m}_{\rm{prior}}+ \mathbf{\widetilde{C}}_{\rm{M}} \, \mathbf{G}^{\sf{T}} \, \mathbf{C}^{-1}_{\rm{D}} \left(\mathbf{d}_{\rm{obs}} - \mathbf{G} \mathbf{m}_{\rm{prior}} \right) \, .\]</div><p>KronLinInv solves the inverse problem in an efficient manner, with a very low memory imprint, suitable for large problems where many model parameters and observations are involved.</p><p>The paper describes how to obtain the solution to the above problem as shown hereafter. First the following matrices are computed</p><div>\[ \mathbf{U}_1 \mathbf{\Lambda}_1  \mathbf{U}_1^{-1}  
+ = \mathbf{C}_{\rm{M}}^{\rm{x}} (\mathbf{G}^{\rm{x}})^{\sf{T}}
+(\mathbf{C}_{\rm{D}}^{\rm{x}})^{-1} \mathbf{G}^{\rm{x}}\]</div><div>\[\mathbf{U}_2 \mathbf{\Lambda}_2  \mathbf{U}_2^{-1}
+=  \mathbf{C}_{\rm{M}}^{\rm{y}} (\mathbf{G}^{\rm{y}})^{\sf{T}}
+(\mathbf{C}_{\rm{D}}^{\rm{y}})^{-1} \mathbf{G}^{\rm{y}}\]</div><div>\[\mathbf{U}_3 \mathbf{\Lambda}_3  \mathbf{U}_3^{-1}
+= \mathbf{C}_{\rm{M}}^{\rm{z}} (\mathbf{G}^{\rm{z}})^{\sf{T}}
+(\mathbf{C}_{\rm{D}}^{\rm{z}})^{-1} \mathbf{G}^{\rm{z}}  \, .\]</div><p>The posterior covariance is then expressed as</p><div>\[\mathbf{\widetilde{C}}_{\rm{M}} = 
+\left(  
+\mathbf{U}_1 \otimes \mathbf{U}_2 \otimes \mathbf{U}_3 
+\right)
+ \big( 
+\mathbf{I} + \mathbf{\Lambda}_1 \! \otimes \! \mathbf{\Lambda}_2 \! \otimes \! \mathbf{\Lambda}_3 
+\big)^{-1} 
+\big( 
+\mathbf{U}_1^{-1}  \mathbf{C}_{\rm{M}}^{\rm{x}} \otimes 
+\mathbf{U}_2^{-1} \mathbf{C}_{\rm{M}}^{\rm{y}} \otimes 
+\mathbf{U}_3^{-1} \mathbf{C}_{\rm{M}}^{\rm{z}} 
+\big) \, .\]</div><p>and the posterior mean model as</p><div>\[\mathbf{\widetilde{m}} =  
+ \mathbf{m}_{\rm{prior}} +  
+ \Big[ \!
+ \left(  
+\mathbf{U}_1 \otimes \mathbf{U}_2 \otimes \mathbf{U}_3 
+\right)
+ \big( 
+\mathbf{I} + \mathbf{\Lambda}_1\!  \otimes \! \mathbf{\Lambda}_2 \!  \otimes\!  \mathbf{\Lambda}_3 
+\big)^{-1} \\ 
+\times \Big( 
+\left( \mathbf{U}_1^{-1}  \mathbf{C}_{\rm{M}}^{\rm{x}} (\mathbf{G}^{\rm{x}})^{\sf{T}} (\mathbf{C}_{\rm{D}}^{\rm{x}})^{-1} \right) \!    \otimes 
+\left( \mathbf{U}_2^{-1} \mathbf{C}_{\rm{M}}^{\rm{y}}  (\mathbf{G}^{\rm{y}})^{\sf{T}} (\mathbf{C}_{\rm{D}}^{\rm{y}})^{-1}  \right)   \!   
+\\ 
+\otimes  \left( \mathbf{U}_3^{-1} \mathbf{C}_{\rm{M}}^{\rm{z}} (\mathbf{G}^{\rm{z}})^{\sf{T}} (\mathbf{C}_{\rm{D}}^{\rm{z}})^{-1} \right)
+\Big)
+\Big] \\
+\times \Big( \mathbf{d}_{\rm{obs}} - \big( \mathbf{G}^{\rm{x}} \otimes \mathbf{G}^{\rm{y}} \otimes \mathbf{G}^{\rm{z}} \big) \, \mathbf{m}_{\rm{prior}} \Big) \, .\]</div><p>These last two formulae are those used by the KronLinInv algorithm.</p><p>Several function are exported by the module KronLinInv:</p><ul><li><p><a href="publicapi/#KronLinInv.calcfactors"><code>calcfactors()</code></a>: Computes the factors necessary to solve the inverse problem</p></li><li><p><a href="publicapi/#KronLinInv.posteriormean"><code>posteriormean()</code></a>: Computes the posterior mean model using the previously computed &quot;factors&quot; with <a href="publicapi/#KronLinInv.calcfactors"><code>calcfactors()</code></a>.</p></li><li><p><a href="publicapi/#KronLinInv.blockpostcov"><code>blockpostcov()</code></a>: Computes a block (or all) of the posterior covariance using the previously computed &quot;factors&quot; with <a href="publicapi/#KronLinInv.calcfactors"><code>calcfactors()</code></a>.</p></li><li><p><a href="@ref"><code>bandpostcov()</code></a>: NOT YET IMPLEMENTED! Computes a band of the posterior covariance the previously computed &quot;factors&quot; with <a href="publicapi/#KronLinInv.calcfactors"><code>calcfactors()</code></a>.</p></li></ul><h2><a class="nav-anchor" id="Usage-examples-1" href="#Usage-examples-1">Usage examples</a></h2><p>The input needed is represented by the set of three covariance matrices of the model parameters, the three covariances of the observed data, the three forward model operators, the observed data (a vector) and the prior model (a vector). _The <strong>first</strong> thing to compute is always the set of &quot;factors&quot; using the function <a href="publicapi/#KronLinInv.calcfactors"><code>calcfactors()</code></a>.  Finally, the posterior mean (see <a href="publicapi/#KronLinInv.posteriormean"><code>posteriormean()</code></a>) and/or covariance (or part of it) (see <a href="publicapi/#KronLinInv.blockpostcov"><code>blockpostcov()</code></a>) can be computed.</p><h3><a class="nav-anchor" id="D-example-1" href="#D-example-1">2D example</a></h3><h3><a class="nav-anchor" id="D-example-2" href="#D-example-2">3D example</a></h3><footer><hr/><a class="next" href="publicapi/"><span class="direction">Next</span><span class="title">API</span></a></footer></article></body></html>
