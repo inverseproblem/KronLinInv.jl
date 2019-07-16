@@ -183,16 +183,16 @@ function calcfactors(Gfwd::FwdOps,Covs::CovMats)
     lambda3,U3,LcholB3 = LAPACK.sygvd!(itype,jobz,uplo,GtiCdG3,copy(Cm3))
 
     
-    ## print 'Calculating fb'
+    ## println('Calculating fb')
     argfb = 1.0 .+ krondiag(lambda1,krondiag(lambda2,lambda3))
     vecdfac = 1.0./argfb
     
-    ## print 'Calculating fc'
+    ## println('Calculating fc')
     iUCm1 = U1 \ Cm1 
     iUCm2 = U2 \ Cm2
     iUCm3 = U3 \ Cm3
 
-    ## print 'Calculating fd'
+    ## println('Calculating fd')
     fd11 = Cd1 \ Matrix{Float64}(I,size(Cd1,1),size(Cd1,2)) #eye(Cd1)
     fd22 = Cd2 \ Matrix{Float64}(I,size(Cd2,1),size(Cd2,2)) ##eye(Cd2) 
     fd33 = Cd3 \ Matrix{Float64}(I,size(Cd3,1),size(Cd3,2)) ##eye(Cd3)
@@ -536,8 +536,6 @@ Computes a block of the posterior covariance.
     * iUCm1, iUCm2, iUCm3  ``\mathbf{U}_1^{-1} \mathbf{C}_{\rm{M}}^{\rm{x}} ``,
       ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{y}}``,
       ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{z}}`` of  ``F_{\sf{C}} `` 
-- `Gfwd`: a structure containing the three forward model matrices  G1,G2,G3, where 
-     `` \mathbf{G} =  \mathbf{G_1} \otimes \mathbf{G_2} \otimes \mathbf{G_3} ``
 - `astart, aend`: indices of the first and last rowa of the requested block
 - `bstart, bend`: indices of the first and last columns of the requested block
 
@@ -545,7 +543,7 @@ Computes a block of the posterior covariance.
 - The requested block of the posterior covariance.
 
 """
-function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
+function blockpostcov(klifac::KLIFactors,
                       astart::Int64,aend::Int64,
                       bstart::Int64,bend::Int64 )
 
@@ -553,7 +551,6 @@ function blockpostcov(klifac::KLIFactors,Gfwd::FwdOps,
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
     diaginvlambda = klifac.invlambda
     iUCm1,iUCm2,iUCm3 = klifac.iUCm1,klifac.iUCm2,klifac.iUCm3
-    G1,G2,G3 = Gfwd.G1,Gfwd.G2,Gfwd.G3
 
     ##-----------------
     Ni = size(U1,1)

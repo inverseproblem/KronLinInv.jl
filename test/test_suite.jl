@@ -108,7 +108,7 @@ function test_mean_cov(nx::Integer,ny::Integer,nz::Integer,
     npts = nx*ny*nz
     astart, aend = 1,div(npts,3)
     bstart, bend = 1,div(npts,3)
-    postC = blockpostcov(klifac,Gfwd,astart,aend,bstart,bend)
+    postC = blockpostcov(klifac,astart,aend,bstart,bend)
 
     ##############################
     ## Check results
