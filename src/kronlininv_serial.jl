@@ -43,12 +43,6 @@ function posteriormean_serial(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Floa
     Z1,Z2,Z3 = klifac.iUCmGtiCd1,klifac.iUCmGtiCd2,klifac.iUCmGtiCd3
     G1,G2,G3 = Gfwd.G1,Gfwd.G2,Gfwd.G3
 
-    # U1,U2,U3 = copy(klifac.U1),copy(klifac.U2),copy(klifac.U3)
-    # diaginvlambda = copy(klifac.invlambda)
-    # Z1,Z2,Z3 = copy(klifac.iUCmGtiCd1),copy(klifac.iUCmGtiCd2),copy(klifac.iUCmGtiCd3)
-    # G1,G2,G3 = copy(Gfwd.G1),copy(Gfwd.G2),copy(Gfwd.G3)
-
-
     ## sizes
     Ni = size(Z1,1)
     Nl = size(Z1,2)
@@ -188,7 +182,7 @@ Computes a block of the posterior covariance, purely serial version.
 - The requested block of the posterior covariance.
 
 """
-function blockpostcov_serial(klifac::KLIFactors,Gfwd::FwdOps,
+function blockpostcov_serial(klifac::KLIFactors,
                       astart::Int64,aend::Int64,
                       bstart::Int64,bend::Int64 )
 
@@ -196,8 +190,7 @@ function blockpostcov_serial(klifac::KLIFactors,Gfwd::FwdOps,
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
     diaginvlambda = klifac.invlambda
     iUCm1,iUCm2,iUCm3 = klifac.iUCm1,klifac.iUCm2,klifac.iUCm3
-    G1,G2,G3 = Gfwd.G1,Gfwd.G2,Gfwd.G3
-
+  
     ##-----------------
     Ni = size(U1,1)
     Nl = size(U1,2)
