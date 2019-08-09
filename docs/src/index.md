@@ -273,7 +273,7 @@ postm = posteriormean(klifac,Gfwd,mprior,dobs)
 # calculate the posterior covariance
 npts = nx*ny*nz
 astart, aend = 1,div(npts,3) # set of rows to be computed
-bstart, bend = 1,div(npts,3) # set of rows to be computed
+bstart, bend = 1,div(npts,3) # set of columns to be computed
 
 # compute the block of posterior covariance
 postC = blockpostcov(klifac,astart,aend,bstart,bend)
@@ -425,7 +425,7 @@ postm = posteriormean(klifac,Gfwd,mprior,dobs)
 # Calculate the posterior covariance
 npts = nx*ny*nz
 astart, aend = 1,div(npts,3) # set of rows to be computed
-bstart, bend = 1,div(npts,3) # set of rows to be computed
+bstart, bend = 1,div(npts,3) # set of columns to be computed
 
 # compute the block of posterior covariance
 postC = blockpostcov(klifac,astart,aend,bstart,bend)
