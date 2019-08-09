@@ -6,7 +6,12 @@
 #
 
 ##==========================================================
+@doc raw"""
+    FwdOps
 
+A structure containing the three forward model matrices  G1, G2, G3, where 
+`` \mathbf{G} =  \mathbf{G_1} \otimes \mathbf{G_2} \otimes \mathbf{G_3} ``
+"""
 struct FwdOps
     G1::Array{Float64,2}
     G2::Array{Float64,2}
@@ -14,7 +19,16 @@ struct FwdOps
 end
 
 ##------------------------
+@doc raw"""
+    CovMats
 
+A structure containing the six covariance matrices `Cm1, Cm2, Cm3, Cd1, Cd2, Cd3`,
+where
+`` \mathbf{C}_{\rm{M}} = \mathbf{C}_{\rm{M}}^{\rm{x}} \otimes 
+\mathbf{C}_{\rm{M}}^{\rm{y}} \otimes \mathbf{C}_{\rm{M}}^{\rm{z}} ``  and
+``\quad \mathbf{C}_{\rm{D}} = \mathbf{C}_{\rm{D}}^{\rm{x}} \otimes 
+\mathbf{C}_{\rm{D}}^{\rm{y}} \otimes \mathbf{C}_{\rm{D}}^{\rm{z}} ``
+"""
 struct CovMats
     Cd1::Array{Float64,2}
     Cd2::Array{Float64,2}
@@ -25,7 +39,27 @@ struct CovMats
 end
 
 ##------------------------
+@doc raw"""
+    KLIFactors
 
+A structure containing all the factors necessary to perform further calculations with KronLinInv,
+as, for instance, computations of the posterior mean model or the posterior covariance matrix.
+The structure includes:
+
+* `U1, U2, U3`:  `` \mathbf{U}_1 ``, `` \mathbf{U}_2 ``, `` \mathbf{U}_3  ``  of  `` F_{\sf{A}} `` 
+* `invlambda`:  ``\big( \mathbf{I} + \mathbf{\Lambda}_1\!  \otimes \! \mathbf{\Lambda}_2 \!  \otimes\!  \mathbf{\Lambda}_3 \big)^{-1}``  of ``F_{\sf{B}} ``
+* `iUCm1, iUCm2, iUCm3`:  ``\mathbf{U}_1^{-1} \mathbf{C}_{\rm{M}}^{\rm{x}}``,
+  ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{y}}``,
+  ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{z}}`` of  `` F_{\sf{C}} `` 
+* `iUCmGtiCd1, iUCmGtiCd1, iUCmGtiCd1`:  
+  ``\mathbf{U}_1^{-1} \mathbf{C}_{\rm{M}}^{\rm{x}}
+  (\mathbf{G}^{\rm{x}})^{\sf{T}}(\mathbf{C}_{\rm{D}}^{\rm{x}})^{-1}``,
+  `` \mathbf{U}_2^{-1} \mathbf{C}_{\rm{M}}^{\rm{y}}
+  (\mathbf{G}^{\rm{y}})^{\sf{T}} (\mathbf{C}_{\rm{D}}^{\rm{y}})^{-1}``,
+  `` \mathbf{U}_3^{-1} \mathbf{C}_{\rm{M}}^{\rm{z}}
+  (\mathbf{G}^{\rm{z}})^{\sf{T}} (\mathbf{C}_{\rm{D}}^{\rm{z}})^{-1}``
+  of  ``F_{\sf{D}}``
+"""
 struct KLIFactors
     U1::Array{Float64,2}
     U2::Array{Float64,2}
@@ -38,6 +72,8 @@ struct KLIFactors
     iUCmGtiCd2::Array{Float64,2}
     iUCmGtiCd3::Array{Float64,2}
 end
+
+
 
 ##==========================================================
 
@@ -107,18 +143,18 @@ Uses LAPACK.sygvd!(), see <http://www.netlib.org/lapack/lug/node54.html>.
   
   
 # Arguments
-- `Gfwd`: a structure containing the three forward model matrices  G1,G2,G3, where 
+- `Gfwd`: a [`FwdOps`](@ref) structure containing the three forward model matrices  G1, G2 and G3, where 
      `` \mathbf{G} =  \mathbf{G_1} \otimes \mathbf{G_2} \otimes \mathbf{G_3} ``
-- `Covs`: a structure containing the six covariance matrices `Cm1, Cm2, Cm3, Cd1, Cd2, Cd3`
+- `Covs`: a [`CovMats`](@ref) structure containing the six covariance matrices ``\mathbf{C}_{\rm{M}} = \mathbf{C}_{\rm{M}}^{\rm{x}} \otimes \mathbf{C}_{\rm{M}}^{\rm{y}} \otimes \mathbf{C}_{\rm{M}}^{\rm{z}}`` and ``\mathbf{C}_{\rm{D}} = \mathbf{C}_{\rm{D}}^{\rm{x}} \otimes \mathbf{C}_{\rm{D}}^{\rm{y}} \otimes \mathbf{C}_{\rm{D}}^{\rm{z}} ``
 
 # Returns
-- A structure containing all the "factors" necessary to perform further calculations with KronLinInv,
+- A [`KLIFactors`](@ref) structure containing all the "factors" necessary to perform further calculations with KronLinInv,
     as, for instance, computations of the posterior mean model or the posterior covariance matrix. 
     The structure includes:
 
     * `U1, U2, U3`:  `` \mathbf{U}_1 ``, `` \mathbf{U}_2 ``,
       `` \mathbf{U}_3  ``  of  `` F_{\sf{A}} `` 
-    * `diaginvlambda`:  `` F_{\sf{B}} ``
+    * `invlambda`:  `` F_{\sf{B}} ``
     * `iUCm1, iUCm2, iUCm3`:  ``\mathbf{U}_1^{-1} \mathbf{C}_{\rm{M}}^{\rm{x}}``,
        ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{y}}``,
         ``\mathbf{U}_2^{-1}  \mathbf{C}_{\rm{M}}^{\rm{z}}`` of  `` F_{\sf{C}} `` 

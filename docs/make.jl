@@ -8,7 +8,7 @@ makedocs(modules = [KronLinInv],
          authors = "Andrea Zunino",
          format = Documenter.HTML(prettyurls=get(ENV,"CI",nothing)=="true"),
          pages = [
-             "User guide" => "index.md",
+             "Home" => "index.md",
              "API" => "publicapi.md"
          ]
          )

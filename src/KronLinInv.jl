@@ -8,7 +8,7 @@
 ##==========================================================
 module KronLinInv
 
-export CovMats,FwdOps
+export CovMats,FwdOps,KLIFactors
 export calcfactors,posteriormean,blockpostcov
 
 
