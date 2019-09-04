@@ -104,17 +104,23 @@ function test_mean_cov(nx::Integer,ny::Integer,nz::Integer,
     ## Calculate the posterior mean model
     postm = posteriormean(klifac,Gfwd,mprior,dobs)
 
+    # serial version
+    postm2 = KronLinInv.posteriormean_serial(klifac,Gfwd,mprior,dobs)
+
     ## Calculate the posterior covariance
     npts = nx*ny*nz
     astart, aend = 1,div(npts,3)
     bstart, bend = 1,div(npts,3)
     postC = blockpostcov(klifac,astart,aend,bstart,bend)
 
+    ## serial version
+    postC2 = KronLinInv.blockpostcov_serial(klifac,astart,aend,bstart,bend)
+    
     ##############################
     ## Check results
     ##############################
 
-    if postm ≈ refmod
+    if (postm ≈ refmod) && (postm2 ≈ refmod)
         return true
     end
     return false

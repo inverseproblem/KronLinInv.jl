@@ -273,6 +273,16 @@ Computes the posterior mean model.
 function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
                        dobs::Array{Float64,1})
 
+    ####================================================
+    ##     Parallel version
+    ####================================================
+    ## get the ids of cores
+    idcpus = workers()
+    firstwork = idcpus[1]
+    numwork = nworkers()
+    println("posteriormean(): Parallel run using $numwork workers")
+
+    
     ##--------------
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
     diaginvlambda = klifac.invlambda
@@ -309,20 +319,9 @@ function posteriormean(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
     ##  Gs have different shape than Us !!
     
     ####===================================
-
-    ####================================================
-    ##     Parallel version
-    ####================================================
-
-    ## get the ids of cores
-    idcpus = workers()
-    firstwork = idcpus[1]
-    numwork = nworkers()
-    println("posteriormean(): Parallel run using $numwork workers")
-    
+ 
     ## create the channel for tracking progress
     chanit = RemoteChannel(()->Channel{Tuple{Float64,Float64,Bool}}(1))
-
 
     ##################################################
     #             loop 1                             #
@@ -583,6 +582,15 @@ function blockpostcov(klifac::KLIFactors,
                       astart::Int64,aend::Int64,
                       bstart::Int64,bend::Int64 )
 
+    ####================================================
+    ##     Parallel version
+    ####================================================
+    ## get the id of cores
+    idcpus = workers()
+    firstwork = idcpus[1]
+    numwork = nworkers()
+    println("blockpostcov(): Parallel run using $numwork workers")
+
     ##--------------
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
     diaginvlambda = klifac.invlambda
@@ -615,17 +623,9 @@ function blockpostcov(klifac::KLIFactors,
     ncj = bend-bstart+1
     postC = Array{Float64}(undef,nci,ncj)
 
-    ####================================================
-    ##     Parallel version
-    ####================================================
+    ##-----------------
     startt = time()
-
-    ## get the id of cores
-    idcpus = workers()
-    firstwork = idcpus[1]
-    numwork = nworkers()
-    println("blockpostcov(): Parallel run using $numwork workers")
-
+  
     ## spread work on rows (Na)
     scheduling,looping = spreadwork(nci,numwork,1) ## Nb !!
 
@@ -904,7 +904,11 @@ end
            
 ##==========================================================
 ##===============================================================
+"""
+    spreadwork(nit::Int64,nunits::Int64,startpoint::Int64)
 
+Distribute work among workers. 
+"""
 function spreadwork(nit::Int64,nunits::Int64,startpoint::Int64)
 
     if (nit<=nunits)
@@ -935,6 +939,8 @@ end
 ##==========================================================
 
 """
+    krondiag(a::Array{Float64,1},b::Array{Float64,1}) 
+
 Kronecker product of two diagonal matrices.
 Returns only the diagonal as a vector.
 """

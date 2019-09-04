@@ -37,6 +37,8 @@ Computes the posterior mean model, purely serial version.
 function posteriormean_serial(klifac::KLIFactors,Gfwd::FwdOps,mprior::Array{Float64,1},
                        dobs::Array{Float64,1})
 
+    println("posteriormean_serial(): Serial version")
+
     ##--------------
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
     diaginvlambda = klifac.invlambda
@@ -185,6 +187,8 @@ Computes a block of the posterior covariance, purely serial version.
 function blockpostcov_serial(klifac::KLIFactors,
                       astart::Int64,aend::Int64,
                       bstart::Int64,bend::Int64 )
+
+    println("blockpostcov_serial(): Serial version")
 
     ##--------------
     U1,U2,U3 = klifac.U1,klifac.U2,klifac.U3
