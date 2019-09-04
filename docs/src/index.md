@@ -19,6 +19,15 @@ Andrea Zunino, Klaus Mosegaard (2018), **An efficient method to solve large line
 
 See the above mentioned paper for a detailed description.
 
+## Installation
+
+To install the package simple enter into the package manager mode in Julia by typing "`]`" at the REPL prompt and then use `add`, i.e.,
+```
+(v1.2) pkg> add KronLinInv
+```
+The package will be automatically downloaded from the web and installed.
+
+
 # Theoretical background
 
 KronLinInv solves the *linear inverse problem* with Gaussian uncertainties
