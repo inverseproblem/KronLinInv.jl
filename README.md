@@ -17,6 +17,14 @@ Andrea Zunino, Klaus Mosegaard,
 Computers & Geosciences, 2018
 ISSN 0098-3004, <https://doi.org/10.1016/j.cageo.2018.09.005>.
 
+
+### Installation
+
+To install the package simple enter into the package manager mode in Julia by typing "]" at the REPL prompt and then use `add`, namely:
+```julia
+(v1.2) pkg> add KronLinInv
+```
+
 ### Authors
 Andrea Zunino, 
 Niels Bohr Institute
