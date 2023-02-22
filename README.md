@@ -5,6 +5,14 @@
 [![Docs Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://inverseproblem.github.io/KronLinInv.jl/stable)
 [![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://inverseproblem.github.io/KronLinInv.jl/latest)
 
+
+---
+
+## **News**: `KronLinInv.jl` has **moved** to  <https://gitlab.com/JuliaGeoph/KronLinInv.jl> 
+
+---
+
+
 Docs: https://inverseproblem.github.io/KronLinInv.jl/stable
 
 Kronecker-product-based linear inversion of geophysical (or other kinds of) data under Gaussian and separability assumptions. 
