@@ -1,6 +1,5 @@
 # KronLinInv.jl
 
-[![Build Status](https://travis-ci.com/inverseproblem/KronLinInv.jl.svg?branch=master)](https://travis-ci.com/inverseproblem/KronLinInv.jl)
 [![CodeCov](https://codecov.io/gh/inverseproblem/KronLinInv.jl/branch/master/graph/badge.svg)](https://codecov.io/inverseproblem/KronLinInv.jl)
 [![Docs Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://inverseproblem.github.io/KronLinInv.jl/stable)
 [![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://inverseproblem.github.io/KronLinInv.jl/latest)
