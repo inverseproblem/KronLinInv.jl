@@ -8,7 +8,7 @@
 
 ---
 
-## **News**: `KronLinInv.jl` has **moved** to  <https://gitlab.com/JuliaGeoph/KronLinInv.jl> 
+## **News**: `KronLinInv.jl` has become part of InverseAlgos.jl, see <https://github.com/GinvLab> 
 
 ---
 
