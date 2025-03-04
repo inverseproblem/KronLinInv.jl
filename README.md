@@ -6,8 +6,8 @@
 
 
 ---
-
-## **News**: `KronLinInv.jl` has become part of `InverseAlgos.jl`, see <https://github.com/GinvLab> 
+**News**:
+##  `KronLinInv.jl` has become part of [`InverseAlgos.jl`](https://github.com/GinvLab/InverseAlgos.jl), see [G⁻¹Lab](https://github.com/GinvLab) 
 
 ---
 
